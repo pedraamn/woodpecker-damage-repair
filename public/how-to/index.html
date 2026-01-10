@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>How to Repair Woodpecker Damage</title>
-  <meta name="description" content="Clear steps for dealing with a wasp nest without making it worse." />
+  <title>How Woodpecker Damage Repair Works</title>
   <link rel="canonical" href="/how-to/" />
   <style>
 :root{
@@ -35,6 +34,9 @@ body{
 a{color:inherit}
 a:focus{outline:2px solid var(--cta); outline-offset:2px}
 
+/* -----------------------
+   TOP NAV
+----------------------- */
 .topbar{
   position:sticky;
   top:0;
@@ -82,6 +84,7 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
   border:1px solid var(--line);
 }
 
+/* CTA button */
 .btn{
   display:inline-block;
   padding:9px 12px;
@@ -97,15 +100,17 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
 .btn:hover{background:var(--cta2)}
 .btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
-/* IMPORTANT: nav links apply grey text; ensure CTA stays white in the toolbar */
+/* Keep CTA white in nav */
 .nav a.btn{
   color:#fff;
   background:var(--cta);
   border-color:rgba(0,0,0,0.04);
 }
 .nav a.btn:hover{background:var(--cta2)}
-.nav a.btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
+/* -----------------------
+   HERO
+----------------------- */
 header{
   border-bottom:1px solid var(--line);
   background:
@@ -119,7 +124,6 @@ header{
   padding:34px 18px 24px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
 .hero h1{
   margin:0;
@@ -127,8 +131,16 @@ header{
   letter-spacing:-0.03em;
   line-height:1.18;
 }
-.sub{margin:0; color:var(--muted); max-width:78ch; font-size:14px}
+.sub{
+  margin:0;
+  color:var(--muted);
+  max-width:78ch;
+  font-size:14px;
+}
 
+/* -----------------------
+   MAIN CONTENT
+----------------------- */
 main{
   max-width:var(--max);
   margin:0 auto;
@@ -141,6 +153,8 @@ main{
   padding:18px;
   box-shadow:var(--shadow);
 }
+
+/* Service image – responsive, smaller on desktop */
 .img{
   margin-top:14px;
   border-radius:14px;
@@ -148,8 +162,22 @@ main{
   border:1px solid var(--line);
   background:var(--soft);
   box-shadow:var(--shadow2);
+  width:100%;
 }
-.img img{display:block; width:100%; height:auto}
+.img img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+/* ~50% width on desktop */
+@media (min-width: 900px){
+  .img{
+    max-width:50%;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
 
 h2{
   margin:18px 0 8px;
@@ -160,6 +188,9 @@ p{margin:0 0 10px}
 .muted{color:var(--muted); font-size:13px}
 hr{border:0; border-top:1px solid var(--line); margin:18px 0}
 
+/* -----------------------
+   CITY GRID
+----------------------- */
 .city-grid{
   list-style:none;
   padding:0;
@@ -175,7 +206,7 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   background:#fff;
   border:1px solid var(--line);
   border-radius:14px;
-  padding:12px 12px;
+  padding:12px;
   font-weight:800;
   font-size:14px;
   box-shadow:0 10px 24px rgba(17,24,39,0.05);
@@ -185,9 +216,12 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   box-shadow:0 14px 28px rgba(17,24,39,0.08);
 }
 
+/* -----------------------
+   CALLOUT
+----------------------- */
 .callout{
   margin:16px 0 12px;
-  padding:14px 14px;
+  padding:14px;
   border-radius:14px;
   border:1px solid rgba(22,163,74,0.22);
   background:linear-gradient(180deg, rgba(22,163,74,0.08), rgba(22,163,74,0.03));
@@ -197,21 +231,104 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   align-items:center;
   gap:10px;
   font-weight:900;
-  letter-spacing:-0.01em;
-  margin:0 0 6px;
 }
 .badge{
-  display:inline-block;
   padding:3px 10px;
   border-radius:999px;
   background:rgba(22,163,74,0.14);
   border:1px solid rgba(22,163,74,0.22);
-  color:var(--ink);
   font-size:12px;
   font-weight:900;
 }
-.callout p{margin:0; color:var(--muted); font-size:13px}
 
+/* -----------------------
+   CONTACT FORM (UPDATED)
+----------------------- */
+.form-grid{
+  margin-top:14px;
+  display:grid;
+  gap:14px;
+  grid-template-columns:1fr 320px;
+  align-items:start;
+}
+@media (max-width: 900px){
+  .form-grid{grid-template-columns:1fr}
+}
+
+.embed-card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  background:var(--soft);
+}
+
+.nx-center{
+  display:flex;
+  justify-content:center; /* mobile centered */
+}
+
+/* Networx container sizing (mobile-first) */
+#nx_form{
+  width:100%;
+  max-width:520px;
+  min-height:520px;
+}
+
+/* Force iframe to fill container */
+#networx_form_container iframe{
+  width:100% !important;
+  height:100% !important;
+  border:0 !important;
+}
+
+
+/* -----------------------
+   WHY BOX
+----------------------- */
+.why-box{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 10px 24px rgba(17,24,39,0.05);
+}
+.why-box h3{
+  margin:0 0 10px;
+  font-size:15px;
+}
+.why-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap:10px;
+}
+.why-item{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  color:var(--muted);
+  font-size:13px;
+}
+.tick{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(22,163,74,0.12);
+  border:1px solid rgba(22,163,74,0.22);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.tick:before{
+  content:"✓";
+  font-weight:900;
+  font-size:12px;
+}
+
+/* -----------------------
+   FOOTER
+----------------------- */
 footer{
   border-top:1px solid var(--line);
   background:#fbfbfa;
@@ -222,60 +339,87 @@ footer{
   padding:28px 18px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
-.footer-inner h2{margin:0; font-size:18px}
-.footer-links{display:flex; gap:12px; flex-wrap:wrap}
-.footer-links a{color:var(--muted); text-decoration:none; font-size:13px; padding:6px 0}
-.small{color:var(--muted); font-size:12px; margin-top:8px}
+.footer-links{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.footer-links a{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:13px;
+}
+.small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* -----------------------
+   MOBILE NAV FIX (KEY PART)
+----------------------- */
+@media (max-width: 640px){
+  .topbar-inner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav{
+    justify-content: center;
+  }
+
+  .nav .btn{
+    width: 100%;
+    text-align: center;
+  }
+}
   </style>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">Woodpecker Damage Repair Company</a>
-      <nav class="nav" aria-label="Primary navigation"><a href="/">Home</a><a href="/cost/">Cost</a><a href="/how-to/" aria-current="page">How-To</a><a class="btn" href="mailto:hello@example.com?subject=Free%20Quote%20Request">Get Free Estimate</a></nav>
+      <nav class="nav" aria-label="Primary navigation"><a href="/">Home</a><a href="/cost/">Cost</a><a href="/how-to/" aria-current="page">How-To</a><a class="btn" href="/contact/">Get Free Estimate</a></nav>
     </div>
   </div>
 
 <header>
   <div class="hero">
-    <h1>How to Repair Woodpecker Damage</h1>
+    <h1>How Woodpecker Damage Repair Works</h1>
+    <p class="sub">A practical, homeowner-friendly guide to how repairs are typically done and when DIY breaks down.</p>
   </div>
 </header>
 <main>
   <section class="card">
+
     <div class="img">
       <img src="/picture.png" alt="Service image" loading="lazy" />
     </div>
-    
-<h2>Can You Repair Woodpecker Damage Yourself?</h2>
-<p>Minor woodpecker damage can sometimes be repaired by homeowners, but success depends on the siding type and extent of the damage. Improper repairs may fail to stop repeat pecking or allow moisture intrusion. For widespread or recurring damage, professional {woodpecker damage repair services} are often the safer option.</p>
-
-<h2>How to Fix Woodpecker Holes in a House</h2>
-<p>Fixing woodpecker holes in a house typically involves cleaning the damaged area, filling holes with appropriate exterior-grade filler, sanding the surface smooth, sealing the repair, and repainting or finishing to match the surrounding siding.</p>
-
-<h2>How to Repair Woodpecker Holes in Wood Siding</h2>
-<p>Repairing woodpecker holes in wood siding requires using fillers designed for exterior wood, followed by proper sealing and paint. Skipping these steps can lead to rot or visible patching.</p>
-
-<h2>How to Repair Woodpecker Damage in Cedar Siding</h2>
-<p>Cedar siding repairs must be handled carefully to preserve the wood grain and appearance. Improper filling or painting can make repairs stand out and reduce siding durability.</p>
-
-<h2>How to Repair Woodpecker Damage in EIFS or Stucco</h2>
-<p>EIFS and stucco repairs involve specialized patch materials and sealing techniques. Incorrect repairs can compromise the moisture barrier and lead to costly structural issues.</p>
-
-<h2>Common Mistakes When Repairing Woodpecker Holes</h2>
-<p>Common DIY mistakes include using interior fillers, failing to seal repairs properly, mismatching paint, and ignoring the cause of the woodpecker activity. These errors often result in repeat damage.</p>
+    <h2>Quick Answer: How Does Woodpecker Damage Repair Usually Work?</h2>
+<p>Woodpecker damage repair usually works by removing weak material, sealing the opening, patching or replacing the damaged section, and restoring the finish so it’s weather-tight again. Pros focus on moisture control and adhesion because a patch that looks fine today can fail quickly if water can get behind it.</p>
+<h2>How Professionals Identify the Extent of Woodpecker Damage</h2>
+<p>The first step is checking whether the damage is only in the siding/trim or if moisture has affected the material behind it. This matters because sealing a hole over soft wood or hidden rot leads to repeat failure and larger repair scope later.</p>
+<h2>How Repair Methods Are Chosen for Woodpecker Holes</h2>
+<p>The repair method depends on hole size, hole density, and whether the surrounding wood is sound. Small, isolated holes may be patched on solid material, but repeated damage or weak edges often calls for replacing boards or trim so the repair has a stable base.</p>
+<h2>How Woodpecker Damage Is Sealed Against Water</h2>
+<p>A durable repair seals the hole and the repair edges so wind-driven rain can’t wick behind the finish. Many DIY repairs fail because the patch isn’t fully sealed, which allows moisture intrusion and breaks down adhesion over time.</p>
+<h2>How Finish Matching Affects the Final Repair</h2>
+<p>Finish matching is what makes repairs blend and stay durable, especially on stained or weathered exteriors. Even when the patch is structurally sound, mismatched paint, sheen, or texture can make the repair stand out and may require a larger blend area to look consistent.</p>
+<h2>When DIY Woodpecker Repairs Commonly Fail</h2>
+<p>DIY repairs commonly fail when the underlying wood is soft, the repair isn’t fully sealed, or finish bonding is poor on weathered surfaces. If you want a realistic sense of pricing when repairs involve replacement and finish blending, you can <a href="/">view our woodpecker damage repair cost guide</a>.</p>
   </section>
 </main>
 
 <footer>
   <div class="footer-inner">
+    
     <h2>Next steps</h2>
     <p class="sub">Ready to move forward? Request a free quote.</p>
     <div>
-      <a class="btn" href="mailto:hello@example.com?subject=Free%20Quote%20Request">Get Free Estimate</a>
+      <a class="btn" href="/contact/">Get Free Estimate</a>
     </div>
+
     <div class="footer-links">
       <a href="/">Home</a>
       <a href="/cost/">Cost</a>

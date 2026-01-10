@@ -1,508 +1,176 @@
 #!/usr/bin/env python3
-"""
-Static site generator (no JS) for a single-service, multi-city site.
-
-Cloudflare Pages:
-- Build command: (empty)
-- Output directory: public
-
-URL structure:
-- /<city>-<state>/   e.g. /los-angeles-ca/
-- /cost/
-- /how-to/
-
-SEO rules enforced:
-- Exactly one H1 per page
-- <title> == H1
-- Title <= 70 characters
-- Main + City pages use the exact same H2 set (Ahrefs-driven)
-- Cost and How-To use distinct H2 sets (no reused headings across them)
-- Pure CSS, barebones, fast
-"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import csv
 import html
 import re
 import shutil
 
 
-# -----------------------
-# CONFIG
-# -----------------------
+
+from dataclasses import dataclass
+from pathlib import Path
+from datetime import date
+
 @dataclass(frozen=True)
 class SiteConfig:
-    service_name: str = "Wasp Nest/Wasp Hive Removal & Wasp Control Services"
-    brand_name: str = "Peephole Installation Company"
-    cta_text: str = "Get Free Estimate"
-    cta_href: str = "mailto:hello@example.com?subject=Free%20Quote%20Request"
-    output_dir: Path = Path("public")
-    image_filename: str = "picture.png"  # sits next to generate.py
-    cost_low: int = 150
-    cost_high: int = 450
+  # Data
+  cities_csv: Path = Path("cities.csv")
+
+  def load_cities(self):
+    return load_cities_from_csv(self.cities_csv)
+
+  from pathlib import Path
+
+  base_name: str = "Woodpecker Damage Repair"
+  brand_name: str = "Woodpecker Damage Repair Company"
+  cta_text: str = "Get Free Estimate"
+  cta_href: str = "/contact/"
+
+  # Build / assets
+  output_dir: Path = Path("public")
+  image_filename: str = "picture.png"  # sits next to generate.py
+
+  # Pricing (base range; city pages may apply multipliers)
+  cost_low: int = 350
+  cost_high: int = 1500
+
+  # Page H1 titles
+  h1_title: str = "Woodpecker Damage Repair/Woodpecker Hole Repair/Siding Repair Services"
+  h1_short: str = "Woodpecker Damage Repair Services"
+  h1_sub: str = "Weather-tight siding and trim repairs that seal holes, match finishes, and reduce repeat damage."
+
+  cost_title: str = "Woodpecker Damage Repair Cost"
+  cost_sub: str = "Typical pricing ranges, scope examples, and what drives the total for siding and trim repairs."
+
+  howto_title: str = "How Woodpecker Damage Repair Works"
+  howto_sub: str = "A practical, homeowner-friendly guide to how repairs are typically done and when DIY breaks down."
+
+  # MAIN PAGE (shared guide)
+  main_h2: list[str] = (
+    "What Is Woodpecker Damage Repair?",
+    "Why Are Woodpeckers Pecking My House?",
+    "What Do Woodpecker Holes Look Like in Siding or Trim?",
+    "Is Woodpecker Damage Bad for Your House?",
+    "Does Woodpecker Damage Mean Termites?",
+    "Is Woodpecker Damage Covered by Insurance?",
+    "When to Hire a Professional for Woodpecker Damage Repair",
+  )
+
+  main_p: list[str] = (
+    "Woodpecker damage repair is the process of sealing and restoring holes in siding, trim, fascia, or soffits so the exterior is weather-tight again. The goal isn’t just to fill a hole—it’s to stabilize the surrounding material and restore a finish that won’t fail in the next storm.",
+    "Woodpeckers usually peck homes to search for insects, create a nesting cavity, or drum to mark territory. The reason matters because repairs last longer when you reduce what attracted the bird in the first place, instead of only patching the visible holes.",
+    "Woodpecker holes often appear as clean round openings, clusters of small probing holes, or larger cavities where the bird returned repeatedly. The pattern helps identify whether the issue is light probing or more serious nesting damage that may require replacement instead of patching.",
+    "Yes, woodpecker damage can be serious because even small holes can let water and pests into the wall system. Over time, repeated wetting can cause paint failure, swelling, rot, and bigger repairs than the original hole.",
+    "Woodpecker activity doesn’t automatically mean termites, but it can signal insects in or around the wood. If you’re seeing soft wood, frass, or repeated pecking in one area, treat it as a ‘possible pest + repair’ situation so you don’t seal in a hidden problem.",
+    "Insurance coverage for woodpecker damage depends on the policy and how the damage is classified. If you’re considering a claim, early photos and a repair assessment can help clarify what’s covered versus what’s considered maintenance or gradual wear.",
+    "Hire a professional when damage is spread across multiple areas, the wood is soft or deteriorated, repairs require ladder work, or finish matching matters. Professional {woodpecker damage repair services} typically include proper sealing, material stabilization, and finish blending so the repair holds up and looks consistent.",
+  )
+
+  # HOW-TO PAGE (ordered, process-first; general guide vs step-by-step tutorial)
+  howto_h2: list[str] = (
+    "Quick Answer: How Does Woodpecker Damage Repair Usually Work?",
+    "How Professionals Identify the Extent of Woodpecker Damage",
+    "How Repair Methods Are Chosen for Woodpecker Holes",
+    "How Woodpecker Damage Is Sealed Against Water",
+    "How Finish Matching Affects the Final Repair",
+    "When DIY Woodpecker Repairs Commonly Fail",
+  )
+
+  howto_p: list[str] = (
+    "Woodpecker damage repair usually works by removing weak material, sealing the opening, patching or replacing the damaged section, and restoring the finish so it’s weather-tight again. Pros focus on moisture control and adhesion because a patch that looks fine today can fail quickly if water can get behind it.",
+    "The first step is checking whether the damage is only in the siding/trim or if moisture has affected the material behind it. This matters because sealing a hole over soft wood or hidden rot leads to repeat failure and larger repair scope later.",
+    "The repair method depends on hole size, hole density, and whether the surrounding wood is sound. Small, isolated holes may be patched on solid material, but repeated damage or weak edges often calls for replacing boards or trim so the repair has a stable base.",
+    "A durable repair seals the hole and the repair edges so wind-driven rain can’t wick behind the finish. Many DIY repairs fail because the patch isn’t fully sealed, which allows moisture intrusion and breaks down adhesion over time.",
+    "Finish matching is what makes repairs blend and stay durable, especially on stained or weathered exteriors. Even when the patch is structurally sound, mismatched paint, sheen, or texture can make the repair stand out and may require a larger blend area to look consistent.",
+    "DIY repairs commonly fail when the underlying wood is soft, the repair isn’t fully sealed, or finish bonding is poor on weathered surfaces. If you want a realistic sense of pricing when repairs involve replacement and finish blending, you can {view our woodpecker damage repair cost guide}.",
+  )
+
+  # COST PAGE (your cost-guide vibe; no walkthroughs)
+  cost_h2: list[str] = (
+    "Quick Answer",
+    "Direct Answer: How Much Does Woodpecker Damage Repair Cost?",
+    "Woodpecker Damage Repair Cost by Scope",
+    "Woodpecker Damage Repair Cost by Method",
+    "What Affects Woodpecker Damage Repair Pricing?",
+    "Related Cost Questions",
+    "Expert Insight from an Exterior Repair Perspective",
+    "Key Takeaways",
+  )
+
+  cost_p: list[str] = (
+    "Woodpecker damage repair typically costs {cost_lo} to {cost_hi}, depending on how many holes there are, whether boards need replacement, and how much finish matching is required. Small patch-and-touch-up repairs are often cheaper, while scattered damage and repainting push costs higher.",
+    "Most homeowners can expect to pay {cost_lo} to {cost_hi} for professional woodpecker damage repair, with the total driven by scope and finish work. Many contractors include a minimum service fee because setup, ladder work, and blending take time even on small repairs.",
+    "Costs rise with the number of damaged areas and whether repairs are concentrated in one spot or spread across the exterior. A few holes in one board is usually faster than scattered damage across multiple elevations that requires repeated setup and blending.",
+    "Patching can be cost-effective when surrounding wood is solid, while replacement is more common when damage is widespread or edges are weak. Finish matching (paint, stain, or texture) is often the biggest price multiplier because blending may require repainting a larger section than the hole itself.",
+    "The biggest pricing drivers are repair count, access height, substrate condition, and finish matching requirements. If moisture has affected the material behind the siding, scope increases because the repair becomes a sealing and restoration job rather than cosmetic filling.",
+    "Is it cheaper to repair woodpecker holes yourself? DIY can cost less in materials, but failures from poor sealing or weak wood often create higher repair costs later. What does it cost to fix woodpecker damage to siding? Siding repairs range widely based on patching versus replacing boards and repainting to blend.",
+    "The most expensive woodpecker repairs are usually the ones done twice. A repair that isn’t fully sealed—or that’s installed on soft wood—can reopen quickly and allow moisture intrusion, expanding the scope. That’s why many homeowners choose {expert woodpecker damage repair services} when durability and finish quality matter.",
+    "Woodpecker damage repair typically costs {cost_lo} to {cost_hi}. Replacement and finish blending are what most often increase total cost. Access height and scattered damage add labor time fast. Pairing repair with deterrence reduces the odds you pay twice.",
+  )
+
+  # LOCAL COST (city-locked variant)
+  location_cost_h2: str = "How Much Does Woodpecker Damage Repair Cost in {City, State}?"
+
+  location_cost_p: str = (
+    "In {City, State}, most woodpecker damage repair projects range from {cost_lo} to {cost_hi}, "
+    "depending on scope and access difficulty. Prices can vary based on local labor rates, property layout, and finish matching requirements. "
+    "For a clearer breakdown of what affects pricing, you can {view our woodpecker damage repair cost guide}."
+  )
+
+  # IMAGES
+  image_prompt: str = (
+    "A realistic natural-light photo of a home exterior repair in progress: a real human contractor on a ladder "
+    "repairing small round woodpecker holes in painted wood siding near trim on a suburban house. "
+    "The worker wears safety glasses and gloves, using a putty knife and exterior-grade patch compound and a caulk gun; "
+    "tools visible, non-staged candid feel, residential yard background."
+  )
+
+
+
 
 
 CONFIG = SiteConfig()
 
-CITIES: list[tuple[str, str]] = [
-  ("New York", "NY"),
-  ("Los Angeles", "CA"),
-  ("Chicago", "IL"),
-  ("Dallas", "TX"),
-  ("Fort Worth", "TX"),
-  ("Philadelphia", "PA"),
-  ("Houston", "TX"),
-  ("Atlanta", "GA"),
-  ("Washington", "DC"),
-  ("Hagerstown", "MD"),
-  ("Boston", "MA"),
-  ("Manchester", "NH"),
-  ("San Francisco", "CA"),
-  ("Oakland", "CA"),
-  ("San Jose", "CA"),
-  ("Tampa", "FL"),
-  ("St. Petersburg", "FL"),
-  ("Sarasota", "FL"),
-  ("Phoenix", "AZ"),
-  ("Prescott", "AZ"),
-  ("Seattle", "WA"),
-  ("Tacoma", "WA"),
-  ("Detroit", "MI"),
-  ("Orlando", "FL"),
-  ("Daytona Beach", "FL"),
-  ("Melbourne", "FL"),
-  ("Minneapolis", "MN"),
-  ("St. Paul", "MN"),
-  ("Denver", "CO"),
-  ("Miami", "FL"),
-  ("Fort Lauderdale", "FL"),
-  ("Cleveland", "OH"),
-  ("Akron", "OH"),
-  ("Canton", "OH"),
-  ("Sacramento", "CA"),
-  ("Stockton", "CA"),
-  ("Modesto", "CA"),
-  ("Charlotte", "NC"),
-  ("Raleigh", "NC"),
-  ("Durham", "NC"),
-  ("Fayetteville", "NC"),
-  ("Portland", "OR"),
-  ("St. Louis", "MO"),
-  ("Indianapolis", "IN"),
-  ("Nashville", "TN"),
-  ("Pittsburgh", "PA"),
-  ("Salt Lake City", "UT"),
-  ("Baltimore", "MD"),
-  ("San Diego", "CA"),
-  ("San Antonio", "TX"),
-  ("Hartford", "CT"),
-  ("New Haven", "CT"),
-  ("Kansas City", "MO"),
-  ("Austin", "TX"),
-  ("Columbus", "OH"),
-  ("Greenville", "SC"),
-  ("Spartanburg", "SC"),
-  ("Asheville", "NC"),
-  ("Anderson", "SC"),
-  ("Cincinnati", "OH"),
-  ("Milwaukee", "WI"),
-  ("West Palm Beach", "FL"),
-  ("Fort Pierce", "FL"),
-  ("Las Vegas", "NV"),
-  ("Jacksonville", "FL"),
-  ("Harrisburg", "PA"),
-  ("Lancaster", "PA"),
-  ("Lebanon", "PA"),
-  ("York", "PA"),
-  ("Grand Rapids", "MI"),
-  ("Kalamazoo", "MI"),
-  ("Battle Creek", "MI"),
-  ("Norfolk", "VA"),
-  ("Portsmouth", "VA"),
-  ("Newport News", "VA"),
-  ("Birmingham", "AL"),
-  ("Anniston", "AL"),
-  ("Tuscaloosa", "AL"),
-  ("Greensboro", "NC"),
-  ("High Point", "NC"),
-  ("Winston-Salem", "NC"),
-  ("Oklahoma City", "OK"),
-  ("Albuquerque", "NM"),
-  ("Santa Fe", "NM"),
-  ("Louisville", "KY"),
-  ("New Orleans", "LA"),
-  ("Memphis", "TN"),
-  ("Providence", "RI"),
-  ("New Bedford", "MA"),
-  ("Fort Myers", "FL"),
-  ("Naples", "FL"),
-  ("Buffalo", "NY"),
-  ("Fresno", "CA"),
-  ("Visalia", "CA"),
-  ("Richmond", "VA"),
-  ("Petersburg", "VA"),
-  ("Mobile", "AL"),
-  ("Pensacola", "FL"),
-  ("Fort Walton Beach", "FL"),
-  ("Little Rock", "AR"),
-  ("Pine Bluff", "AR"),
-  ("Wilkes-Barre", "PA"),
-  ("Scranton", "PA"),
-  ("Hazleton", "PA"),
-  ("Knoxville", "TN"),
-  ("Tulsa", "OK"),
-  ("Albany", "NY"),
-  ("Schenectady", "NY"),
-  ("Troy", "NY"),
-  ("Lexington", "KY"),
-  ("Dayton", "OH"),
-  ("Tucson", "AZ"),
-  ("Sierra Vista", "AZ"),
-  ("Spokane", "WA"),
-  ("Des Moines", "IA"),
-  ("Ames", "IA"),
-  ("Green Bay", "WI"),
-  ("Appleton", "WI"),
-  ("Honolulu", "HI"),
-  ("Roanoke", "VA"),
-  ("Lynchburg", "VA"),
-  ("Wichita", "KS"),
-  ("Hutchinson", "KS"),
-  ("Flint", "MI"),
-  ("Saginaw", "MI"),
-  ("Bay City", "MI"),
-  ("Omaha", "NE"),
-  ("Springfield", "MO"),
-  ("Huntsville", "AL"),
-  ("Decatur", "AL"),
-  ("Florence", "AL"),
-  ("Columbia", "SC"),
-  ("Madison", "WI"),
-  ("Portland", "ME"),
-  ("Auburn", "ME"),
-  ("Rochester", "NY"),
-  ("Harlingen", "TX"),
-  ("Weslaco", "TX"),
-  ("Brownsville", "TX"),
-  ("McAllen", "TX"),
-  ("Toledo", "OH"),
-  ("Charleston", "WV"),
-  ("Huntington", "WV"),
-  ("Waco", "TX"),
-  ("Temple", "TX"),
-  ("Bryan", "TX"),
-  ("Savannah", "GA"),
-  ("Charleston", "SC"),
-  ("Chattanooga", "TN"),
-  ("Colorado Springs", "CO"),
-  ("Pueblo", "CO"),
-  ("Syracuse", "NY"),
-  ("El Paso", "TX"),
-  ("Las Cruces", "NM"),
-  ("Paducah", "KY"),
-  ("Cape Girardeau", "MO"),
-  ("Harrisburg", "IL"),
-  ("Shreveport", "LA"),
-  ("Texarkana", "TX"),
-  ("Champaign", "IL"),
-  ("Urbana", "IL"),
-  ("Springfield", "IL"),
-  ("Decatur", "IL"),
-  ("Burlington", "VT"),
-  ("Plattsburgh", "NY"),
-  ("Cedar Rapids", "IA"),
-  ("Waterloo", "IA"),
-  ("Iowa City", "IA"),
-  ("Dubuque", "IA"),
-  ("Baton Rouge", "LA"),
-  ("Fort Smith", "AR"),
-  ("Fayetteville", "AR"),
-  ("Springdale", "AR"),
-  ("Rogers", "AR"),
-  ("Myrtle Beach", "SC"),
-  ("Florence", "SC"),
-  ("Boise", "ID"),
-  ("Jackson", "MS"),
-  ("South Bend", "IN"),
-  ("Elkhart", "IN"),
-  ("Johnson City", "TN"),
-  ("Kingsport", "TN"),
-  ("Bristol", "VA"),
-  ("Greenville", "NC"),
-  ("New Bern", "NC"),
-  ("Washington", "NC"),
-  ("Reno", "NV"),
-  ("Davenport", "IA"),
-  ("Rock Island", "IL"),
-  ("Moline", "IL"),
-  ("Tallahassee", "FL"),
-  ("Thomasville", "GA"),
-  ("Tyler", "TX"),
-  ("Longview", "TX"),
-  ("Lufkin", "TX"),
-  ("Nacogdoches", "TX"),
-  ("Lincoln", "NE"),
-  ("Hastings", "NE"),
-  ("Kearney", "NE"),
-  ("Augusta", "GA"),
-  ("Aiken", "SC"),
-  ("Evansville", "IN"),
-  ("Fort Wayne", "IN"),
-  ("Sioux Falls", "SD"),
-  ("Mitchell", "SD"),
-  ("Johnstown", "PA"),
-  ("Altoona", "PA"),
-  ("State College", "PA"),
-  ("Fargo", "ND"),
-  ("Valley City", "ND"),
-  ("Yakima", "WA"),
-  ("Pasco", "WA"),
-  ("Richland", "WA"),
-  ("Kennewick", "WA"),
-  ("Springfield", "MA"),
-  ("Holyoke", "MA"),
-  ("Traverse City", "MI"),
-  ("Cadillac", "MI"),
-  ("Lansing", "MI"),
-  ("Youngstown", "OH"),
-  ("Macon", "GA"),
-  ("Eugene", "OR"),
-  ("Montgomery", "AL"),
-  ("Selma", "AL"),
-  ("Peoria", "IL"),
-  ("Bloomington", "IL"),
-  ("Santa Barbara", "CA"),
-  ("Santa Maria", "CA"),
-  ("San Luis Obispo", "CA"),
-  ("Lafayette", "LA"),
-  ("Bakersfield", "CA"),
-  ("Wilmington", "NC"),
-  ("Columbus", "GA"),
-  ("Monterey", "CA"),
-  ("Salinas", "CA"),
-  ("La Crosse", "WI"),
-  ("Eau Claire", "WI"),
-  ("Corpus Christi", "TX"),
-  ("Salisbury", "MD"),
-  ("Amarillo", "TX"),
-  ("Wausau", "WI"),
-  ("Rhinelander", "WI"),
-  ("Columbus", "MS"),
-  ("Tupelo", "MS"),
-  ("West Point", "MS"),
-  ("Starkville", "MS"),
-  ("Columbia", "MO"),
-  ("Jefferson City", "MO"),
-  ("Chico", "CA"),
-  ("Redding", "CA"),
-  ("Rockford", "IL"),
-  ("Duluth", "MN"),
-  ("Superior", "WI"),
-  ("Medford", "OR"),
-  ("Klamath Falls", "OR"),
-  ("Lubbock", "TX"),
-  ("Topeka", "KS"),
-  ("Monroe", "LA"),
-  ("El Dorado", "AR"),
-  ("Beaumont", "TX"),
-  ("Port Arthur", "TX"),
-  ("Odessa", "TX"),
-  ("Midland", "TX"),
-  ("Palm Springs", "CA"),
-  ("Anchorage", "AK"),
-  ("Minot", "ND"),
-  ("Bismarck", "ND"),
-  ("Dickinson", "ND"),
-  ("Williston", "ND"),
-  ("Panama City", "FL"),
-  ("Sioux City", "IA"),
-  ("Wichita Falls", "TX"),
-  ("Lawton", "OK"),
-  ("Joplin", "MO"),
-  ("Pittsburg", "KS"),
-  ("Albany", "GA"),
-  ("Rochester", "MN"),
-  ("Mason City", "IA"),
-  ("Austin", "MN"),
-  ("Erie", "PA"),
-  ("Idaho Falls", "ID"),
-  ("Pocatello", "ID"),
-  ("Jackson", "WY"),
-  ("Bangor", "ME"),
-  ("Gainesville", "FL"),
-  ("Biloxi", "MS"),
-  ("Gulfport", "MS"),
-  ("Terre Haute", "IN"),
-  ("Sherman", "TX"),
-  ("Ada", "OK"),
-  ("Missoula", "MT"),
-  ("Binghamton", "NY"),
-  ("Wheeling", "WV"),
-  ("Steubenville", "OH"),
-  ("Yuma", "AZ"),
-  ("El Centro", "CA"),
-  ("Billings", "MT"),
-  ("Abilene", "TX"),
-  ("Sweetwater", "TX"),
-  ("Bluefield", "WV"),
-  ("Beckley", "WV"),
-  ("Oak Hill", "WV"),
-  ("Hattiesburg", "MS"),
-  ("Laurel", "MS"),
-  ("Rapid City", "SD"),
-  ("Dothan", "AL"),
-  ("Utica", "NY"),
-  ("Clarksburg", "WV"),
-  ("Weston", "WV"),
-  ("Harrisonburg", "VA"),
-  ("Jackson", "TN"),
-  ("Quincy", "IL"),
-  ("Hannibal", "MO"),
-  ("Keokuk", "IA"),
-  ("Charlottesville", "VA"),
-  ("Lake Charles", "LA"),
-  ("Elmira", "NY"),
-  ("Corning", "NY"),
-  ("Watertown", "NY"),
-  ("Bowling Green", "KY"),
-  ("Marquette", "MI"),
-  ("Jonesboro", "AR"),
-  ("Alexandria", "LA"),
-  ("Laredo", "TX"),
-  ("Butte", "MT"),
-  ("Bozeman", "MT"),
-  ("Bend", "OR"),
-  ("Grand Junction", "CO"),
-  ("Montrose", "CO"),
-  ("Twin Falls", "ID"),
-  ("Lafayette", "IN"),
-  ("Lima", "OH"),
-  ("Great Falls", "MT"),
-  ("Meridian", "MS"),
-  ("Cheyenne", "WY"),
-  ("Scottsbluff", "NE"),
-  ("Parkersburg", "WV"),
-  ("Greenwood", "MS"),
-  ("Greenville", "MS"),
-  ("Eureka", "CA"),
-  ("San Angelo", "TX"),
-  ("Casper", "WY"),
-  ("Riverton", "WY"),
-  ("Mankato", "MN"),
-  ("Ottumwa", "IA"),
-  ("Kirksville", "MO"),
-  ("St. Joseph", "MO"),
-  ("Fairbanks", "AK"),
-  ("Zanesville", "OH"),
-  ("Victoria", "TX"),
-  ("Helena", "MT"),
-  ("Presque Isle", "ME"),
-  ("Juneau", "AK"),
-  ("Alpena", "MI"),
-  ("North Platte", "NE"),
-  ("Glendive", "MT"),
-]
+CityWithCol = tuple[str, str, float]
 
+def load_cities_from_csv(path: Path) -> tuple[CityWithCol, ...]:
+  cities: list[CityWithCol] = []
 
-BRAND_NAME = "Woodpecker Damage Repair Company"
+  with path.open(newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
 
-H1_TITLE = "Woodpecker Damage Repair/Wood Siding & EIFS Services"
+    required_fields = {"city", "state", "col"}
+    if not reader.fieldnames or not required_fields.issubset(reader.fieldnames):
+      raise ValueError(
+          "CSV must have headers: city,state,col "
+          f"(found: {reader.fieldnames})"
+      )
 
-COST_TITLE = "Woodpecker Damage Repair Cost"
+    for i, row in enumerate(reader, start=2):  # header is line 1
+      city = (row.get("city") or "").strip()
+      state = (row.get("state") or "").strip().upper()
+      col_raw = (row.get("col") or "").strip()
 
-HOWTO_TITLE = "How to Repair Woodpecker Damage"
+      if not city or not state or not col_raw:
+        raise ValueError(f"Missing city/state/col at CSV line {i}: {row}")
 
+      try:
+        col = float(col_raw)
+      except ValueError as e:
+        raise ValueError(
+            f"Invalid col value at CSV line {i}: {col_raw!r}"
+        ) from e
 
-# =========================
-# MAIN PAGE (H2_SHARED)
-# =========================
+      cities.append((city, state, col))
 
-H2_SHARED = [
-    "What Is Woodpecker Damage to Houses?",
-    "Why Woodpeckers Peck on Houses",
-    "Common Types of Woodpecker Damage",
-    "Woodpecker Holes in Wood and Cedar Siding",
-    "Woodpecker Damage to EIFS and Stucco",
-    "Professional Woodpecker Damage Repair vs DIY",
-    "When to Hire a Woodpecker Damage Repair Service",
-]
+  return tuple(cities)
 
-P_SHARED = [
-    "Woodpecker damage occurs when woodpeckers peck, drill, or create holes in the exterior of a house. This damage commonly affects wood siding, cedar siding, EIFS, and stucco surfaces. Over time, repeated pecking can expose the structure to moisture intrusion and further deterioration.",
+CITIES: tuple[CityWithCol, ...] = CONFIG.load_cities()
 
-    "Woodpeckers peck on houses for several reasons, including searching for insects, creating nesting cavities, or establishing territory. Soft siding materials and hollow-sounding surfaces often attract repeated pecking behavior.",
-
-    "Common types of woodpecker damage include small round holes, larger nesting cavities, clustered peck marks, and surface chipping. Left unaddressed, these openings allow water, pests, and air infiltration.",
-
-    "Woodpecker holes in wood and cedar siding are especially common because these materials are softer and more attractive to birds. Repairing cedar siding requires proper filling, sealing, and color-matching to restore both appearance and protection.",
-
-    "EIFS and stucco are also frequent targets for woodpeckers. Damage to these systems often involves punctures or cavities that require specialized EIFS patching and sealing techniques to prevent moisture damage.",
-
-    "DIY woodpecker hole repair may seem straightforward, but improper filling or sealing can trap moisture or fail to stop repeat damage. Professional repair focuses on restoring the surface correctly while addressing underlying vulnerabilities.",
-
-    "Hiring a professional is recommended when damage affects siding integrity, involves EIFS or stucco systems, or when repeated woodpecker activity continues despite temporary fixes."
-]
-
-
-# =========================
-# HOW-TO PAGE (H2_HOWTO)
-# =========================
-
-H2_HOWTO = [
-    "Can You Repair Woodpecker Damage Yourself?",
-    "How to Fix Woodpecker Holes in a House",
-    "How to Repair Woodpecker Holes in Wood Siding",
-    "How to Repair Woodpecker Damage in Cedar Siding",
-    "How to Repair Woodpecker Damage in EIFS or Stucco",
-    "Common Mistakes When Repairing Woodpecker Holes",
-    "When DIY Woodpecker Damage Repair Is Not Recommended",
-]
-
-P_HOWTO = [
-    "Minor woodpecker damage can sometimes be repaired by homeowners, but success depends on the siding type and extent of the damage. Improper repairs may fail to stop repeat pecking or allow moisture intrusion. For widespread or recurring damage, professional {woodpecker damage repair services} are often the safer option.",
-
-    "Fixing woodpecker holes in a house typically involves cleaning the damaged area, filling holes with appropriate exterior-grade filler, sanding the surface smooth, sealing the repair, and repainting or finishing to match the surrounding siding.",
-
-    "Repairing woodpecker holes in wood siding requires using fillers designed for exterior wood, followed by proper sealing and paint. Skipping these steps can lead to rot or visible patching.",
-
-    "Cedar siding repairs must be handled carefully to preserve the wood grain and appearance. Improper filling or painting can make repairs stand out and reduce siding durability.",
-
-    "EIFS and stucco repairs involve specialized patch materials and sealing techniques. Incorrect repairs can compromise the moisture barrier and lead to costly structural issues.",
-
-    "Common DIY mistakes include using interior fillers, failing to seal repairs properly, mismatching paint, and ignoring the cause of the woodpecker activity. These errors often result in repeat damage.",
-
-    "DIY repair is not recommended when damage is extensive, affects EIFS or stucco systems, or when woodpeckers continue pecking after repairs. In these cases, contacting a provider that offers {woodpecker damage repair services} is the safest next step."
-]
-
-
-# =========================
-# COST PAGE (H2_COST)
-# =========================
-
-H2_COST = [
-    "How Much Does Woodpecker Damage Repair Cost?",
-    "What Affects the Cost of Woodpecker Damage Repair?",
-    "Cost to Repair Woodpecker Holes in Siding",
-    "Woodpecker Damage Repair Cost for EIFS and Stucco",
-    "Does Insurance Cover Woodpecker Damage?",
-    "When Professional Woodpecker Damage Repair Is Worth the Cost",
-]
-
-P_COST = [
-    "Woodpecker damage repair typically costs between $200 and $1,500, depending on the number of holes, siding type, and extent of damage. Many homeowners compare DIY repairs against professional {woodpecker damage repair services} before deciding.",
-
-    "Repair costs are influenced by siding material, size and quantity of holes, accessibility, height of the repair area, and whether moisture damage is present behind the siding.",
-
-    "Repairing woodpecker holes in wood or cedar siding generally costs less than repairing EIFS or stucco, which require specialized materials and techniques.",
-
-    "EIFS and stucco repairs are often more expensive due to moisture barrier considerations and the need for precise patching to prevent future damage.",
-
-    "Insurance coverage for woodpecker damage varies by policy. Some homeowners insurance plans may cover damage if it is sudden and accidental, while others consider it maintenance-related. Policy review is recommended.",
-
-    "Professional repair is worth the cost when damage affects structural integrity, involves EIFS systems, or when repeat woodpecker activity continues. In these cases, professional {woodpecker damage repair services} provide long-term protection and peace of mind."
-]
 
 
 """
@@ -545,8 +213,8 @@ def clamp_title(title: str, max_chars: int = 70) -> str:
     return title[: max_chars - 1].rstrip() + "…"
 
 
-def city_h1(service: str, city: str, state: str) -> str:
-    return clamp_title(f"{service} in {city}, {state}", 70)
+def city_title(city: str, state: str) -> str:
+    return clamp_title(f"{CONFIG.h1_short} in {city}, {state}", 70)
 
 
 def write_text(out_path: Path, content: str) -> None:
@@ -600,6 +268,9 @@ body{
 a{color:inherit}
 a:focus{outline:2px solid var(--cta); outline-offset:2px}
 
+/* -----------------------
+   TOP NAV
+----------------------- */
 .topbar{
   position:sticky;
   top:0;
@@ -647,6 +318,7 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
   border:1px solid var(--line);
 }
 
+/* CTA button */
 .btn{
   display:inline-block;
   padding:9px 12px;
@@ -662,15 +334,17 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
 .btn:hover{background:var(--cta2)}
 .btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
-/* IMPORTANT: nav links apply grey text; ensure CTA stays white in the toolbar */
+/* Keep CTA white in nav */
 .nav a.btn{
   color:#fff;
   background:var(--cta);
   border-color:rgba(0,0,0,0.04);
 }
 .nav a.btn:hover{background:var(--cta2)}
-.nav a.btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
+/* -----------------------
+   HERO
+----------------------- */
 header{
   border-bottom:1px solid var(--line);
   background:
@@ -684,7 +358,6 @@ header{
   padding:34px 18px 24px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
 .hero h1{
   margin:0;
@@ -692,8 +365,16 @@ header{
   letter-spacing:-0.03em;
   line-height:1.18;
 }
-.sub{margin:0; color:var(--muted); max-width:78ch; font-size:14px}
+.sub{
+  margin:0;
+  color:var(--muted);
+  max-width:78ch;
+  font-size:14px;
+}
 
+/* -----------------------
+   MAIN CONTENT
+----------------------- */
 main{
   max-width:var(--max);
   margin:0 auto;
@@ -706,6 +387,8 @@ main{
   padding:18px;
   box-shadow:var(--shadow);
 }
+
+/* Service image – responsive, smaller on desktop */
 .img{
   margin-top:14px;
   border-radius:14px;
@@ -713,8 +396,22 @@ main{
   border:1px solid var(--line);
   background:var(--soft);
   box-shadow:var(--shadow2);
+  width:100%;
 }
-.img img{display:block; width:100%; height:auto}
+.img img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+/* ~50% width on desktop */
+@media (min-width: 900px){
+  .img{
+    max-width:50%;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
 
 h2{
   margin:18px 0 8px;
@@ -725,6 +422,9 @@ p{margin:0 0 10px}
 .muted{color:var(--muted); font-size:13px}
 hr{border:0; border-top:1px solid var(--line); margin:18px 0}
 
+/* -----------------------
+   CITY GRID
+----------------------- */
 .city-grid{
   list-style:none;
   padding:0;
@@ -740,7 +440,7 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   background:#fff;
   border:1px solid var(--line);
   border-radius:14px;
-  padding:12px 12px;
+  padding:12px;
   font-weight:800;
   font-size:14px;
   box-shadow:0 10px 24px rgba(17,24,39,0.05);
@@ -750,9 +450,12 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   box-shadow:0 14px 28px rgba(17,24,39,0.08);
 }
 
+/* -----------------------
+   CALLOUT
+----------------------- */
 .callout{
   margin:16px 0 12px;
-  padding:14px 14px;
+  padding:14px;
   border-radius:14px;
   border:1px solid rgba(22,163,74,0.22);
   background:linear-gradient(180deg, rgba(22,163,74,0.08), rgba(22,163,74,0.03));
@@ -762,21 +465,104 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   align-items:center;
   gap:10px;
   font-weight:900;
-  letter-spacing:-0.01em;
-  margin:0 0 6px;
 }
 .badge{
-  display:inline-block;
   padding:3px 10px;
   border-radius:999px;
   background:rgba(22,163,74,0.14);
   border:1px solid rgba(22,163,74,0.22);
-  color:var(--ink);
   font-size:12px;
   font-weight:900;
 }
-.callout p{margin:0; color:var(--muted); font-size:13px}
 
+/* -----------------------
+   CONTACT FORM (UPDATED)
+----------------------- */
+.form-grid{
+  margin-top:14px;
+  display:grid;
+  gap:14px;
+  grid-template-columns:1fr 320px;
+  align-items:start;
+}
+@media (max-width: 900px){
+  .form-grid{grid-template-columns:1fr}
+}
+
+.embed-card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  background:var(--soft);
+}
+
+.nx-center{
+  display:flex;
+  justify-content:center; /* mobile centered */
+}
+
+/* Networx container sizing (mobile-first) */
+#nx_form{
+  width:100%;
+  max-width:520px;
+  min-height:520px;
+}
+
+/* Force iframe to fill container */
+#networx_form_container iframe{
+  width:100% !important;
+  height:100% !important;
+  border:0 !important;
+}
+
+
+/* -----------------------
+   WHY BOX
+----------------------- */
+.why-box{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 10px 24px rgba(17,24,39,0.05);
+}
+.why-box h3{
+  margin:0 0 10px;
+  font-size:15px;
+}
+.why-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap:10px;
+}
+.why-item{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  color:var(--muted);
+  font-size:13px;
+}
+.tick{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(22,163,74,0.12);
+  border:1px solid rgba(22,163,74,0.22);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.tick:before{
+  content:"✓";
+  font-weight:900;
+  font-size:12px;
+}
+
+/* -----------------------
+   FOOTER
+----------------------- */
 footer{
   border-top:1px solid var(--line);
   background:#fbfbfa;
@@ -787,13 +573,44 @@ footer{
   padding:28px 18px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
-.footer-inner h2{margin:0; font-size:18px}
-.footer-links{display:flex; gap:12px; flex-wrap:wrap}
-.footer-links a{color:var(--muted); text-decoration:none; font-size:13px; padding:6px 0}
-.small{color:var(--muted); font-size:12px; margin-top:8px}
+.footer-links{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.footer-links a{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:13px;
+}
+.small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* -----------------------
+   MOBILE NAV FIX (KEY PART)
+----------------------- */
+@media (max-width: 640px){
+  .topbar-inner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav{
+    justify-content: center;
+  }
+
+  .nav .btn{
+    width: 100%;
+    text-align: center;
+  }
+}
 """.strip()
+
+
 
 
 # -----------------------
@@ -814,7 +631,7 @@ def nav_html(current: str) -> str:
     )
 
 
-def base_html(*, title: str, canonical_path: str, description: str, current_nav: str, body: str) -> str:
+def base_html(*, title: str, canonical_path: str, current_nav: str, body: str) -> str:
     # title == h1 is enforced by callers; keep this thin.
     return f"""<!doctype html>
 <html lang="en">
@@ -822,7 +639,6 @@ def base_html(*, title: str, canonical_path: str, description: str, current_nav:
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{esc(title)}</title>
-  <meta name="description" content="{esc(description)}" />
   <link rel="canonical" href="{esc(canonical_path)}" />
   <style>
 {CSS}
@@ -831,7 +647,7 @@ def base_html(*, title: str, canonical_path: str, description: str, current_nav:
 <body>
   <div class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="/">{esc(BRAND_NAME)}</a>
+      <a class="brand" href="/">{esc(CONFIG.brand_name)}</a>
       {nav_html(current_nav)}
     </div>
   </div>
@@ -846,125 +662,122 @@ def header_block(*, h1: str, sub: str) -> str:
 <header>
   <div class="hero">
     <h1>{esc(h1)}</h1>
+    <p class="sub">{esc(sub)}</p>
+  </div>
+</header>
+""".rstrip()
+
+def contact_header_block(*, h1: str, sub: str) -> str:
+    return f"""
+<header class="contact-hero">
+  <div class="hero">
+    <h1>{esc(h1)}</h1>
+    <p class="sub">{esc(sub)}</p>
   </div>
 </header>
 """.rstrip()
 
 
-def footer_block() -> str:
-    return f"""
-<footer>
-  <div class="footer-inner">
+def footer_block(*, show_cta: bool = True) -> str:
+    cta_html = ""
+    if show_cta:
+        cta_html = f"""
     <h2>Next steps</h2>
     <p class="sub">Ready to move forward? Request a free quote.</p>
     <div>
       <a class="btn" href="{esc(CONFIG.cta_href)}">{esc(CONFIG.cta_text)}</a>
     </div>
+"""
+
+    return f"""
+<footer>
+  <div class="footer-inner">
+    {cta_html}
     <div class="footer-links">
       <a href="/">Home</a>
       <a href="/cost/">Cost</a>
       <a href="/how-to/">How-To</a>
     </div>
-    <div class="small">© {esc(BRAND_NAME)}. All rights reserved.</div>
+    <div class="small">© {esc(CONFIG.brand_name)}. All rights reserved.</div>
   </div>
 </footer>
 """.rstrip()
 
 
-def page_shell(*, h1: str, sub: str, inner_html: str) -> str:
-    # Single image used everywhere. Since we copy picture.png into /public/,
-    # it can be referenced as "/picture.png" from any route.
+
+def page_shell(*, h1: str, sub: str, inner_html: str, show_image: bool = True, show_footer_cta: bool = True) -> str:
     img_src = f"/{CONFIG.image_filename}"
+    img_html = ""
+    if show_image:
+        img_html = f"""
+    <div class="img">
+      <img src="{esc(img_src)}" alt="Service image" loading="lazy" />
+    </div>
+""".rstrip()
+
     return (
         header_block(h1=h1, sub=sub)
         + f"""
 <main>
   <section class="card">
-    <div class="img">
-      <img src="{esc(img_src)}" alt="Service image" loading="lazy" />
-    </div>
+{img_html}
     {inner_html}
   </section>
 </main>
 """
-        + footer_block()
+        + footer_block(show_cta=show_footer_cta)
     ).rstrip()
+
 
 
 # -----------------------
 # CONTENT SECTIONS
 # -----------------------
-def shared_sections_html(*, local_line: str | None = None) -> str:
-    local = f' <span class="muted">{esc(local_line)}</span>' if local_line else ""
-    return f"""
-<h2>{esc(H2_SHARED[0])}</h2>
-<p>{esc(P_SHARED[0])}</</p>
 
-<h2>{esc(H2_SHARED[1])}</h2>
-<p>{esc(P_SHARED[1])}</</p>
+def linkify_curly(text: str) -> str:
+  """
+  Replace {word} with a link to the homepage using that word as link text
+  """
+  parts = []
+  last = 0
 
-<h2>{esc(H2_SHARED[2])}</h2>
-<p>{esc(P_SHARED[2])}</</p>
+  for m in re.finditer(r"\{([^}]+)\}", text):
+    # text before the match
+    parts.append(esc(text[last:m.start()]))
 
-<h2>{esc(H2_SHARED[3])}</h2>
-<p>{esc(P_SHARED[3])}</</p>
+    word = m.group(1)
+    parts.append(f'<a href="/">{esc(word)}</a>')
 
-<h2>{esc(H2_SHARED[4])}</h2>
-<p>{esc(P_SHARED[4])}</</p>
+    last = m.end()
 
-<h2>{esc(H2_SHARED[5])}</h2>
-<p>{esc(P_SHARED[5])}</</p>
-""".rstrip()
+  # remaining text
+  parts.append(esc(text[last:]))
 
+  return "".join(parts)
 
-def cost_sections_html() -> str:
-    return f"""
-<h2>{esc(H2_COST[0])}</h2>
-<p>{esc(P_COST[0])}</p>
+def make_section(*, headings: list[str], paras:  list[str]) -> str:
+  parts = []
+  for h2, p in zip(headings, paras):
+    parts.append(f"<h2>{esc(h2)}</h2>")
+    parts.append(f"<p>{linkify_curly(p)}</p>")
+  return "\n".join(parts)
 
-<h2>{esc(H2_COST[1])}</h2>
-<p>{esc(P_COST[1])}</p>
+def location_cost_section(city: str, state: str, col: float) -> str:
+    cost_lo = f"<strong>${int(CONFIG.cost_low * col)}</strong>"
+    cost_hi = f"<strong>${int(CONFIG.cost_high * col)}</strong>"
 
-<h2>{esc(H2_COST[2])}</h2>
-<p>{esc(P_COST[2])}</p>
+    h2 = CONFIG.location_cost_h2.replace(
+        "{City, State}", f"{city}, {state}"
+    )
 
-<h2>{esc(H2_COST[3])}</h2>
-<p>{esc(P_COST[3])}</p>
+    p = (
+        CONFIG.location_cost_p
+        .replace("<strong>{City, State}", f"{city}, {state}</strong>")
+        .replace("{cost_lo}", cost_lo)
+        .replace("{cost_hi}", cost_hi)
+    )
 
-<h2>{esc(H2_COST[4])}</h2>
-<p>{esc(P_COST[4])}</p>
-
-<h2>{esc(H2_COST[5])}</h2>
-<p>{esc(P_COST[5])}</p>
-
-<hr />
-
-<p class="muted">
-  Typical installed range (single nest, many homes): ${CONFIG.cost_low}–${CONFIG.cost_high}. Final pricing depends on access, nest location, and time on site.
-</p>
-""".rstrip()
-
-
-def howto_sections_html() -> str:
-    return f"""
-<h2>{esc(H2_HOWTO[0])}</h2>
-<p>{esc(P_HOWTO[0])}</p>
-
-<h2>{esc(H2_HOWTO[1])}</h2>
-<p>{esc(P_HOWTO[1])}</p>
-
-<h2>{esc(H2_HOWTO[2])}</h2>
-<p>{esc(P_HOWTO[2])}</p>
-
-<h2>{esc(H2_HOWTO[3])}</h2>
-<p>{esc(P_HOWTO[3])}</p>
-
-<h2>{esc(H2_HOWTO[4])}</h2>
-<p>{esc(P_HOWTO[4])}</p>
-
-<h2>{esc(H2_HOWTO[5])}</h2>
-<p>{esc(P_HOWTO[5])}</p>
-""".rstrip()
+    return f"<h2>{esc(h2)}</h2>\n<p>{esc(p)}</p>"
 
 
 def city_cost_callout_html(city: str, state: str) -> str:
@@ -972,13 +785,9 @@ def city_cost_callout_html(city: str, state: str) -> str:
     return f"""
 <div class="callout" role="note" aria-label="Typical cost range">
   <div class="callout-title">
-    <span class="badge">Typical range</span>
-    <span>${CONFIG.cost_low}–${CONFIG.cost_high} for one nest</span>
+    <span class="badge">Typical range in {esc(city)}, {esc(state)}</span>
+    <span>${CONFIG.cost_low}–${CONFIG.cost_high}</span>
   </div>
-  <p>
-    In {esc(city)}, {esc(state)}, most pricing comes down to access and where the nest is located.
-    If you want a fast, no-pressure estimate, use the “{esc(CONFIG.cta_text)}” button above.
-  </p>
 </div>
 """.rstrip()
 
@@ -986,100 +795,143 @@ def city_cost_callout_html(city: str, state: str) -> str:
 # -----------------------
 # PAGE FACTORY
 # -----------------------
-def make_page(*, h1: str, canonical: str, description: str, nav_key: str, sub: str, inner: str) -> str:
+def make_page(*, h1: str, canonical: str, nav_key: str, sub: str, inner: str, show_image: bool = True, show_footer_cta: bool = True) -> str:
     h1 = clamp_title(h1, 70)
     title = h1  # enforce title == h1
     return base_html(
         title=title,
         canonical_path=canonical,
-        description=clamp_title(description, 155),
         current_nav=nav_key,
-        body=page_shell(h1=h1, sub=sub, inner_html=inner),
+        body=page_shell(h1=h1, sub=sub, inner_html=inner, show_image=show_image, show_footer_cta=show_footer_cta),
     )
 
 
 def homepage_html() -> str:
-    h1 = H1_TITLE
     city_links = "\n".join(
         f'<li><a href="{esc("/" + city_state_slug(city, state) + "/")}">{esc(city)}, {esc(state)}</a></li>'
-        for city, state in CITIES
+        for city, state, _ in CITIES
     )
     inner = (
-        shared_sections_html()
+        make_section(headings=CONFIG.main_h2, paras=CONFIG.main_p)
         + """
 <hr />
 <h2>Choose your city</h2>
-<p class="muted">Select a city page for the same guide with a light local line.</p>
+<p class="muted">We provide services nationwide, including in the following cities:</p>
 <ul class="city-grid">
 """
         + city_links
-        + """
+        + f"""
 </ul>
 <hr />
 <p class="muted">
-  Also available: <a href="/cost/">Wasp Nest Removal Cost</a> and <a href="/how-to/">How to Get Rid of Wasp Nest</a>.
+  Also available: <a href="/cost/">{esc(CONFIG.cost_title)}</a> and <a href="/how-to/">{esc(CONFIG.howto_title)}</a>.
 </p>
 """
     )
 
     return make_page(
-        h1=h1,
+        h1=CONFIG.h1_title,
         canonical="/",
-        description="Straight answers on wasp nest removal and wasp control.",
         nav_key="home",
-        sub="How removal works, what prevents repeat activity, and when to call help.",
+        sub=CONFIG.h1_sub,
         inner=inner,
     )
 
+def contact_page_html() -> str:
+    # Hard-coded copy
+    h1 = "Get Your Free Estimate"
+    sub = "Fill out the form below and we'll connect you with a qualified local professional."
 
-def city_page_html(city: str, state: str) -> str:
+    why_title = "Why Choose Us?"
+    why_bullets = (
+        "Free, no-obligation estimates",
+        "Trusted, experienced professionals",
+        "Nationwide service coverage",
+        "Fast response times",
+    )
+
+    why_items = "\n".join(
+        f'<li class="why-item"><span class="tick" aria-hidden="true"></span><span>{esc(t)}</span></li>'
+        for t in why_bullets
+    )
+
+    # ✅ Paste your Networx embed EXACTLY here.
+    # (This is the snippet style from your screenshot.)
+    networx_embed = """
+<div id="networx_form_container" style="margin:0px;padding:0px;">
+    <div id = "nx_form" style = "width: 242px; height: 375px;">
+        <script type="text/javascript" src = "https://api.networx.com/iframe.php?aff_id=73601bc3bd5a961a61a973e92e29f169&aff_to_form_id=7994"></script>
+    </div>
+</div>
+""".strip()
+
+    inner = f"""
+<div class="form-grid">
+  <div class="embed-card">
+    <div class="nx-center">
+      {networx_embed}
+    </div>
+  </div>
+
+  <aside class="why-box" aria-label="Why choose us">
+    <h3>{esc(why_title)}</h3>
+    <ul class="why-list">
+      {why_items}
+    </ul>
+  </aside>
+</div>
+""".strip()
+
+    # Use the same site shell, but NO image on contact (recommended)
+    return make_page(
+        h1=h1,
+        canonical="/contact/",
+        nav_key="contact",
+        sub=sub,
+        inner=inner,
+        show_image=False,
+        show_footer_cta=False
+    )
+
+
+
+def city_page_html(city: str, state: str, col: float) -> str:
     inner = (
-        shared_sections_html(local_line=f"Serving {city}, {state}.")
-        + city_cost_callout_html(city, state)
-        + f"""
-<hr />
-<h2>Wasp Nest Removal Cost</h2>
-<p class="muted">
-  Typical installed range for one nest often falls around ${CONFIG.cost_low}–${CONFIG.cost_high}. Access and nest location drive most pricing.
-  See the <a href="/cost/">cost page</a> for details.
-</p>
-"""
+      location_cost_section(city, state, col)
+      + make_section(headings=CONFIG.main_h2, paras=CONFIG.main_p)
     )
 
     return make_page(
-        h1=city_h1(H1_TITLE, city, state),
+        h1=city_title(city, state),
         canonical=f"/{city_state_slug(city, state)}/",
-        description=f"Wasp nest removal and wasp control guide with local context for {city}, {state}.",
         nav_key="home",
-        sub="Same core guide, plus a quick local note and a typical cost range.",
+        sub=CONFIG.h1_sub,
         inner=inner,
     )
 
 
 def cost_page_html() -> str:
     return make_page(
-        h1=COST_TITLE,
+        h1=CONFIG.cost_title,
         canonical="/cost/",
-        description="Typical wasp nest removal cost ranges and what changes pricing.",
         nav_key="cost",
-        sub="Simple ranges and the factors that usually move the price.",
-        inner=cost_sections_html(),
+        sub=CONFIG.cost_sub,
+        inner=make_section(headings=CONFIG.cost_h2, paras=CONFIG.cost_p),
     )
 
 
 def howto_page_html() -> str:
     return make_page(
-        h1=HOWTO_TITLE,
+        h1=CONFIG.howto_title,
         canonical="/how-to/",
-        description="Clear steps for dealing with a wasp nest without making it worse.",
         nav_key="howto",
-        sub="A practical guide that prioritizes safety and reduces repeat activity.",
-        inner=howto_sections_html(),
+        sub=CONFIG.howto_sub,
+        inner=make_section(headings=CONFIG.howto_h2, paras=CONFIG.howto_p),
     )
 
 
 # -----------------------
-# ROBOTS + SITEMAP
+# ROBOTS + SITEMAP + WRANGLER
 # -----------------------
 def robots_txt() -> str:
     return "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
@@ -1093,34 +945,49 @@ def sitemap_xml(urls: list[str]) -> str:
         + "</urlset>\n"
     )
 
+def wrangler_content() -> str:
+    name = CONFIG.base_name.lower().replace(" ", "-")
+    today = date.today().isoformat()
+
+    return f"""{{
+  "name": "{name}",
+  "compatibility_date": "{today}",
+  "assets": {{
+    "directory": "./public"
+  }}
+}}
+"""
+
 
 # -----------------------
 # MAIN
 # -----------------------
 def main() -> None:
-    script_dir = Path(__file__).resolve().parent
-    out = CONFIG.output_dir
+  script_dir = Path(__file__).resolve().parent
+  out = CONFIG.output_dir
 
-    reset_output_dir(out)
+  reset_output_dir(out)
 
-    # Copy the single shared image into /public/ so all pages can reference "/picture.png".
-    copy_site_image(src_dir=script_dir, out_dir=out, filename=CONFIG.image_filename)
+  # Copy the single shared image into /public/ so all pages can reference "/picture.png".
+  copy_site_image(src_dir=script_dir, out_dir=out, filename=CONFIG.image_filename)
 
-    # Core pages
-    write_text(out / "index.html", homepage_html())
-    write_text(out / "cost" / "index.html", cost_page_html())
-    write_text(out / "how-to" / "index.html", howto_page_html())
+  # Core pages
+  write_text(out / "index.html", homepage_html())
+  write_text(out / "cost" / "index.html", cost_page_html())
+  write_text(out / "how-to" / "index.html", howto_page_html())
+  write_text(out / "contact" / "index.html", contact_page_html())
 
-    # City pages
-    for city, state in CITIES:
-        write_text(out / city_state_slug(city, state) / "index.html", city_page_html(city, state))
+  # City pages
+  for city, state, col in CITIES:
+      write_text(out / city_state_slug(city, state) / "index.html", city_page_html(city, state, col))
 
-    # robots + sitemap
-    urls = ["/", "/cost/", "/how-to/"] + [f"/{city_state_slug(c, s)}/" for c, s in CITIES]
-    write_text(out / "robots.txt", robots_txt())
-    write_text(out / "sitemap.xml", sitemap_xml(urls))
+  # robots + sitemap + wrangler
+  urls = ["/", "/cost/", "/how-to/"] + [f"/{city_state_slug(c, s)}/" for c, s, _ in CITIES]
+  write_text(out / "robots.txt", robots_txt())
+  write_text(out / "sitemap.xml", sitemap_xml(urls))
+  write_text(script_dir / "wrangler.jsonc", wrangler_content())
 
-    print(f"✅ Generated {len(urls)} pages into: {out.resolve()}")
+  print(f"✅ Generated {len(urls)} pages into: {out.resolve()}")
 
 
 if __name__ == "__main__":

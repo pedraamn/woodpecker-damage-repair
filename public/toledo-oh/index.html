@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Woodpecker Damage Repair/Wood Siding &amp; EIFS Services in Toledo, OH</title>
-  <meta name="description" content="Wasp nest removal and wasp control guide with local context for Toledo, OH." />
+  <title>Woodpecker Damage Repair Services in Toledo, OH</title>
   <link rel="canonical" href="/toledo-oh/" />
   <style>
 :root{
@@ -35,6 +34,9 @@ body{
 a{color:inherit}
 a:focus{outline:2px solid var(--cta); outline-offset:2px}
 
+/* -----------------------
+   TOP NAV
+----------------------- */
 .topbar{
   position:sticky;
   top:0;
@@ -82,6 +84,7 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
   border:1px solid var(--line);
 }
 
+/* CTA button */
 .btn{
   display:inline-block;
   padding:9px 12px;
@@ -97,15 +100,17 @@ a:focus{outline:2px solid var(--cta); outline-offset:2px}
 .btn:hover{background:var(--cta2)}
 .btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
-/* IMPORTANT: nav links apply grey text; ensure CTA stays white in the toolbar */
+/* Keep CTA white in nav */
 .nav a.btn{
   color:#fff;
   background:var(--cta);
   border-color:rgba(0,0,0,0.04);
 }
 .nav a.btn:hover{background:var(--cta2)}
-.nav a.btn:focus{outline:2px solid var(--cta2); outline-offset:2px}
 
+/* -----------------------
+   HERO
+----------------------- */
 header{
   border-bottom:1px solid var(--line);
   background:
@@ -119,7 +124,6 @@ header{
   padding:34px 18px 24px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
 .hero h1{
   margin:0;
@@ -127,8 +131,16 @@ header{
   letter-spacing:-0.03em;
   line-height:1.18;
 }
-.sub{margin:0; color:var(--muted); max-width:78ch; font-size:14px}
+.sub{
+  margin:0;
+  color:var(--muted);
+  max-width:78ch;
+  font-size:14px;
+}
 
+/* -----------------------
+   MAIN CONTENT
+----------------------- */
 main{
   max-width:var(--max);
   margin:0 auto;
@@ -141,6 +153,8 @@ main{
   padding:18px;
   box-shadow:var(--shadow);
 }
+
+/* Service image – responsive, smaller on desktop */
 .img{
   margin-top:14px;
   border-radius:14px;
@@ -148,8 +162,22 @@ main{
   border:1px solid var(--line);
   background:var(--soft);
   box-shadow:var(--shadow2);
+  width:100%;
 }
-.img img{display:block; width:100%; height:auto}
+.img img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+/* ~50% width on desktop */
+@media (min-width: 900px){
+  .img{
+    max-width:50%;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
 
 h2{
   margin:18px 0 8px;
@@ -160,6 +188,9 @@ p{margin:0 0 10px}
 .muted{color:var(--muted); font-size:13px}
 hr{border:0; border-top:1px solid var(--line); margin:18px 0}
 
+/* -----------------------
+   CITY GRID
+----------------------- */
 .city-grid{
   list-style:none;
   padding:0;
@@ -175,7 +206,7 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   background:#fff;
   border:1px solid var(--line);
   border-radius:14px;
-  padding:12px 12px;
+  padding:12px;
   font-weight:800;
   font-size:14px;
   box-shadow:0 10px 24px rgba(17,24,39,0.05);
@@ -185,9 +216,12 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   box-shadow:0 14px 28px rgba(17,24,39,0.08);
 }
 
+/* -----------------------
+   CALLOUT
+----------------------- */
 .callout{
   margin:16px 0 12px;
-  padding:14px 14px;
+  padding:14px;
   border-radius:14px;
   border:1px solid rgba(22,163,74,0.22);
   background:linear-gradient(180deg, rgba(22,163,74,0.08), rgba(22,163,74,0.03));
@@ -197,21 +231,104 @@ hr{border:0; border-top:1px solid var(--line); margin:18px 0}
   align-items:center;
   gap:10px;
   font-weight:900;
-  letter-spacing:-0.01em;
-  margin:0 0 6px;
 }
 .badge{
-  display:inline-block;
   padding:3px 10px;
   border-radius:999px;
   background:rgba(22,163,74,0.14);
   border:1px solid rgba(22,163,74,0.22);
-  color:var(--ink);
   font-size:12px;
   font-weight:900;
 }
-.callout p{margin:0; color:var(--muted); font-size:13px}
 
+/* -----------------------
+   CONTACT FORM (UPDATED)
+----------------------- */
+.form-grid{
+  margin-top:14px;
+  display:grid;
+  gap:14px;
+  grid-template-columns:1fr 320px;
+  align-items:start;
+}
+@media (max-width: 900px){
+  .form-grid{grid-template-columns:1fr}
+}
+
+.embed-card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  background:var(--soft);
+}
+
+.nx-center{
+  display:flex;
+  justify-content:center; /* mobile centered */
+}
+
+/* Networx container sizing (mobile-first) */
+#nx_form{
+  width:100%;
+  max-width:520px;
+  min-height:520px;
+}
+
+/* Force iframe to fill container */
+#networx_form_container iframe{
+  width:100% !important;
+  height:100% !important;
+  border:0 !important;
+}
+
+
+/* -----------------------
+   WHY BOX
+----------------------- */
+.why-box{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 10px 24px rgba(17,24,39,0.05);
+}
+.why-box h3{
+  margin:0 0 10px;
+  font-size:15px;
+}
+.why-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap:10px;
+}
+.why-item{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  color:var(--muted);
+  font-size:13px;
+}
+.tick{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(22,163,74,0.12);
+  border:1px solid rgba(22,163,74,0.22);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.tick:before{
+  content:"✓";
+  font-weight:900;
+  font-size:12px;
+}
+
+/* -----------------------
+   FOOTER
+----------------------- */
 footer{
   border-top:1px solid var(--line);
   background:#fbfbfa;
@@ -222,77 +339,90 @@ footer{
   padding:28px 18px;
   display:grid;
   gap:10px;
-  text-align:left;
 }
-.footer-inner h2{margin:0; font-size:18px}
-.footer-links{display:flex; gap:12px; flex-wrap:wrap}
-.footer-links a{color:var(--muted); text-decoration:none; font-size:13px; padding:6px 0}
-.small{color:var(--muted); font-size:12px; margin-top:8px}
+.footer-links{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.footer-links a{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:13px;
+}
+.small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* -----------------------
+   MOBILE NAV FIX (KEY PART)
+----------------------- */
+@media (max-width: 640px){
+  .topbar-inner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav{
+    justify-content: center;
+  }
+
+  .nav .btn{
+    width: 100%;
+    text-align: center;
+  }
+}
   </style>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">Woodpecker Damage Repair Company</a>
-      <nav class="nav" aria-label="Primary navigation"><a href="/" aria-current="page">Home</a><a href="/cost/">Cost</a><a href="/how-to/">How-To</a><a class="btn" href="mailto:hello@example.com?subject=Free%20Quote%20Request">Get Free Estimate</a></nav>
+      <nav class="nav" aria-label="Primary navigation"><a href="/" aria-current="page">Home</a><a href="/cost/">Cost</a><a href="/how-to/">How-To</a><a class="btn" href="/contact/">Get Free Estimate</a></nav>
     </div>
   </div>
 
 <header>
   <div class="hero">
-    <h1>Woodpecker Damage Repair/Wood Siding &amp; EIFS Services in Toledo, OH</h1>
+    <h1>Woodpecker Damage Repair Services in Toledo, OH</h1>
+    <p class="sub">Weather-tight siding and trim repairs that seal holes, match finishes, and reduce repeat damage.</p>
   </div>
 </header>
 <main>
   <section class="card">
+
     <div class="img">
       <img src="/picture.png" alt="Service image" loading="lazy" />
     </div>
-    
-<h2>What Is Woodpecker Damage to Houses?</h2>
-<p>Woodpecker damage occurs when woodpeckers peck, drill, or create holes in the exterior of a house. This damage commonly affects wood siding, cedar siding, EIFS, and stucco surfaces. Over time, repeated pecking can expose the structure to moisture intrusion and further deterioration.</</p>
-
-<h2>Why Woodpeckers Peck on Houses</h2>
-<p>Woodpeckers peck on houses for several reasons, including searching for insects, creating nesting cavities, or establishing territory. Soft siding materials and hollow-sounding surfaces often attract repeated pecking behavior.</</p>
-
-<h2>Common Types of Woodpecker Damage</h2>
-<p>Common types of woodpecker damage include small round holes, larger nesting cavities, clustered peck marks, and surface chipping. Left unaddressed, these openings allow water, pests, and air infiltration.</</p>
-
-<h2>Woodpecker Holes in Wood and Cedar Siding</h2>
-<p>Woodpecker holes in wood and cedar siding are especially common because these materials are softer and more attractive to birds. Repairing cedar siding requires proper filling, sealing, and color-matching to restore both appearance and protection.</</p>
-
-<h2>Woodpecker Damage to EIFS and Stucco</h2>
-<p>EIFS and stucco are also frequent targets for woodpeckers. Damage to these systems often involves punctures or cavities that require specialized EIFS patching and sealing techniques to prevent moisture damage.</</p>
-
-<h2>Professional Woodpecker Damage Repair vs DIY</h2>
-<p>DIY woodpecker hole repair may seem straightforward, but improper filling or sealing can trap moisture or fail to stop repeat damage. Professional repair focuses on restoring the surface correctly while addressing underlying vulnerabilities.</</p>
-<div class="callout" role="note" aria-label="Typical cost range">
-  <div class="callout-title">
-    <span class="badge">Typical range</span>
-    <span>$150–$450 for one nest</span>
-  </div>
-  <p>
-    In Toledo, OH, most pricing comes down to access and where the nest is located.
-    If you want a fast, no-pressure estimate, use the “Get Free Estimate” button above.
-  </p>
-</div>
-<hr />
-<h2>Wasp Nest Removal Cost</h2>
-<p class="muted">
-  Typical installed range for one nest often falls around $150–$450. Access and nest location drive most pricing.
-  See the <a href="/cost/">cost page</a> for details.
-</p>
-
+    <h2>How Much Does Woodpecker Damage Repair Cost in Toledo, OH?</h2>
+<p>In {City, State}, most woodpecker damage repair projects range from &lt;strong&gt;$336&lt;/strong&gt; to &lt;strong&gt;$1440&lt;/strong&gt;, depending on scope and access difficulty. Prices can vary based on local labor rates, property layout, and finish matching requirements. For a clearer breakdown of what affects pricing, you can {view our woodpecker damage repair cost guide}.</p><h2>What Is Woodpecker Damage Repair?</h2>
+<p>Woodpecker damage repair is the process of sealing and restoring holes in siding, trim, fascia, or soffits so the exterior is weather-tight again. The goal isn’t just to fill a hole—it’s to stabilize the surrounding material and restore a finish that won’t fail in the next storm.</p>
+<h2>Why Are Woodpeckers Pecking My House?</h2>
+<p>Woodpeckers usually peck homes to search for insects, create a nesting cavity, or drum to mark territory. The reason matters because repairs last longer when you reduce what attracted the bird in the first place, instead of only patching the visible holes.</p>
+<h2>What Do Woodpecker Holes Look Like in Siding or Trim?</h2>
+<p>Woodpecker holes often appear as clean round openings, clusters of small probing holes, or larger cavities where the bird returned repeatedly. The pattern helps identify whether the issue is light probing or more serious nesting damage that may require replacement instead of patching.</p>
+<h2>Is Woodpecker Damage Bad for Your House?</h2>
+<p>Yes, woodpecker damage can be serious because even small holes can let water and pests into the wall system. Over time, repeated wetting can cause paint failure, swelling, rot, and bigger repairs than the original hole.</p>
+<h2>Does Woodpecker Damage Mean Termites?</h2>
+<p>Woodpecker activity doesn’t automatically mean termites, but it can signal insects in or around the wood. If you’re seeing soft wood, frass, or repeated pecking in one area, treat it as a ‘possible pest + repair’ situation so you don’t seal in a hidden problem.</p>
+<h2>Is Woodpecker Damage Covered by Insurance?</h2>
+<p>Insurance coverage for woodpecker damage depends on the policy and how the damage is classified. If you’re considering a claim, early photos and a repair assessment can help clarify what’s covered versus what’s considered maintenance or gradual wear.</p>
+<h2>When to Hire a Professional for Woodpecker Damage Repair</h2>
+<p>Hire a professional when damage is spread across multiple areas, the wood is soft or deteriorated, repairs require ladder work, or finish matching matters. Professional <a href="/">woodpecker damage repair services</a> typically include proper sealing, material stabilization, and finish blending so the repair holds up and looks consistent.</p>
   </section>
 </main>
 
 <footer>
   <div class="footer-inner">
+    
     <h2>Next steps</h2>
     <p class="sub">Ready to move forward? Request a free quote.</p>
     <div>
-      <a class="btn" href="mailto:hello@example.com?subject=Free%20Quote%20Request">Get Free Estimate</a>
+      <a class="btn" href="/contact/">Get Free Estimate</a>
     </div>
+
     <div class="footer-links">
       <a href="/">Home</a>
       <a href="/cost/">Cost</a>
