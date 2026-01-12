@@ -931,7 +931,7 @@ def howto_page_html() -> str:
 
 
 # -----------------------
-# ROBOTS + SITEMAP + WRANGLER
+# ROBOTS + SITEMAP + WRANGLER 
 # -----------------------
 def robots_txt() -> str:
     return "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
