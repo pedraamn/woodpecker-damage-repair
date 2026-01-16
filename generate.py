@@ -820,13 +820,6 @@ def homepage_html() -> str:
 <ul class="city-grid">
 """
         + city_links
-        + f"""
-</ul>
-<hr />
-<p class="muted">
-  Also available: <a href="/cost/">{esc(CONFIG.cost_title)}</a> and <a href="/how-to/">{esc(CONFIG.howto_title)}</a>.
-</p>
-"""
     )
 
     return make_page(
@@ -840,7 +833,7 @@ def homepage_html() -> str:
 def contact_page_html() -> str:
     # Hard-coded copy
     h1 = "Get Your Free Estimate"
-    sub = "Fill out the form below and we'll connect you with a qualified local professional."
+    sub = "All you have to do is fill out the form below."
 
     why_title = "Why Choose Us?"
     why_bullets = (
